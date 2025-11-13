@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于平台 - MediaPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --bg-panel: #252a3a;
+            --accent: #4a90e2;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --error: #e74c3c;
+            --text-primary: #ffffff;
+            --text-secondary: #b8c5d1;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+        
+        .bg-panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .text-accent {
+            color: var(--accent);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #357abd 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #357abd 0%, var(--accent) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+        }
+        
+        .feature-card {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tech-stack-item {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tech-stack-item:hover {
+            border-color: var(--accent);
+            background: rgba(74, 144, 226, 0.1);
+        }
+        
+        .step-card {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            margin-bottom: 24px;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: 24px;
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .faq-item {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .faq-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .faq-question:hover {
+            background: rgba(74, 144, 226, 0.05);
+        }
+        
+        .faq-answer {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .faq-answer.open {
+            max-height: 200px;
+            padding: 0 20px 20px;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.6s ease;
+        }
+        
+        .code-block {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        
+        .command-line {
+            color: var(--accent);
+        }
+        
+        .parameter {
+            color: var(--success);
+        }
+        
+        .value {
+            color: var(--warning);
+        }
+        
+        .architecture-diagram {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin: 24px 0;
+        }
+        
+        .diagram-layer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 16px 0;
+            padding: 16px;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .diagram-component {
+            background: var(--accent);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 0 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .diagram-arrow {
+            color: var(--text-secondary);
+            font-size: 20px;
+        }
+        
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        .stat-card {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-panel/90 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-2xl font-bold text-accent">MediaPro</a>
+                    <div class="text-sm text-text-secondary">专业媒体处理平台</div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-text-secondary hover:text-accent transition-colors">下载中心</a>
+                    <a href="video-editor.html" class="text-text-secondary hover:text-accent transition-colors">视频编辑</a>
+                    <a href="audio-processor.html" class="text-text-secondary hover:text-accent transition-colors">音频处理</a>
+                    <a href="#" class="text-text-primary hover:text-accent transition-colors">关于平台</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero区域 -->
+    <section class="pt-24 pb-16 bg-gradient-primary">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <div class="fade-in">
+                <h1 class="text-5xl font-bold mb-6">
+                    关于 <span class="text-accent">MediaPro</span>
+                </h1>
+                <p class="text-xl text-text-secondary max-w-3xl mx-auto leading-relaxed">
+                    MediaPro是一个基于yt-dlp和ffmpeg技术栈的专业媒体处理平台，为用户提供一站式的视频下载、编辑和音频处理解决方案。
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 平台愿景 -->
+    <section class="py-20 bg-secondary">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold mb-6">平台愿景</h2>
+                <p class="text-xl text-text-secondary max-w-4xl mx-auto">
+                    我们致力于打造一个功能强大、易于使用的媒体处理平台，让每个人都能轻松处理各种音视频内容，无论是专业创作者还是普通用户。
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="feature-card fade-in">
+                    <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-center">高效处理</h3>
+                    <p class="text-text-secondary text-center">
+                        基于先进的ffmpeg技术，提供快速、稳定的音视频处理能力，支持多线程和批量处理，大幅提升工作效率。
+                    </p>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-center">简单易用</h3>
+                    <p class="text-text-secondary text-center">
+                        直观的用户界面设计，简化的操作流程，让复杂的音视频处理变得简单，无需专业知识即可上手使用。
+                    </p>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-center">安全可靠</h3>
+                    <p class="text-text-secondary text-center">
+                        所有处理都在本地完成，确保用户隐私和数据安全，支持断点续传和错误恢复，保证处理可靠性。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 技术架构 -->
+    <section class="py-20 bg-primary">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold mb-6">技术架构</h2>
+                <p class="text-xl text-text-secondary max-w-4xl mx-auto">
+                    MediaPro基于业界领先的开源技术构建，提供稳定可靠的媒体处理能力
+                </p>
+            </div>
+            
+            <!-- 架构图 -->
+            <div class="architecture-diagram fade-in">
+                <h3 class="text-2xl font-bold mb-6">系统架构</h3>
+                
+                <div class="diagram-layer">
+                    <div class="diagram-component">用户界面</div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-component">API网关</div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-component">处理引擎</div>
+                </div>
+                
+                <div class="diagram-layer">
+                    <div class="diagram-component">yt-dlp</div>
+                    <div class="diagram-arrow">+</div>
+                    <div class="diagram-component">ffmpeg</div>
+                    <div class="diagram-arrow">=</div>
+                    <div class="diagram-component">核心处理</div>
+                </div>
+                
+                <div class="diagram-layer">
+                    <div class="diagram-component">文件存储</div>
+                    <div class="diagram-arrow">←</div>
+                    <div class="diagram-component">结果输出</div>
+                    <div class="diagram-arrow">←</div>
+                    <div class="diagram-component">任务管理</div>
+                </div>
+            </div>
+            
+            <!-- 技术栈 -->
+            <div class="fade-in">
+                <h3 class="text-2xl font-bold mb-8 text-center">核心技术栈</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="tech-stack-item">
+                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 mx-auto">
+                            <span class="text-white font-bold text-sm">YTD</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">yt-dlp</h4>
+                        <p class="text-sm text-text-secondary">视频下载引擎</p>
+                    </div>
+                    
+                    <div class="tech-stack-item">
+                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 mx-auto">
+                            <span class="text-white font-bold text-sm">FF</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">FFmpeg</h4>
+                        <p class="text-sm text-text-secondary">音视频处理</p>
+                    </div>
+                    
+                    <div class="tech-stack-item">
+                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 mx-auto">
+                            <span class="text-white font-bold text-sm">JS</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">JavaScript</h4>
+                        <p class="text-sm text-text-secondary">前端交互</p>
+                    </div>
+                    
+                    <div class="tech-stack-item">
+                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 mx-auto">
+                            <span class="text-white font-bold text-sm">PY</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">Python</h4>
+                        <p class="text-sm text-text-secondary">后端服务</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 使用指南 -->
+    <section class="py-20 bg-secondary">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold mb-6">使用指南</h2>
+                <p class="text-xl text-text-secondary max-w-4xl mx-auto">
+                    简单几步，轻松完成媒体处理任务
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- 视频下载指南 -->
+                <div class="fade-in">
+                    <h3 class="text-2xl font-bold mb-6 text-accent">视频下载</h3>
+                    
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4 class="font-semibold mb-3">复制视频链接</h4>
+                        <p class="text-text-secondary mb-4">从YouTube、Bilibili等支持的平台复制视频URL地址。</p>
+                        <div class="code-block">
+                            <span class="command-line">示例:</span> <span class="value">https://www.youtube.com/watch?v=example</span>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4 class="font-semibold mb-3">粘贴并分析</h4>
+                        <p class="text-text-secondary mb-4">在下载中心粘贴URL，系统会自动分析可用的质量和格式。</p>
+                        <div class="code-block">
+                            <span class="command-line">支持平台:</span> <span class="parameter">YouTube, Bilibili, Vimeo, TikTok, Instagram等1000+网站</span>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4 class="font-semibold mb-3">选择参数</h4>
+                        <p class="text-text-secondary mb-4">选择所需的视频质量、音频质量和字幕选项。</p>
+                        <div class="code-block">
+                            <span class="command-line">可选质量:</span> <span class="parameter">720p, 1080p, 4K, 8K</span><br>
+                            <span class="command-line">音频质量:</span> <span class="parameter">128kbps, 192kbps, 320kbps</span>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">4</div>
+                        <h4 class="font-semibold mb-3">开始下载</h4>
+                        <p class="text-text-secondary">点击下载按钮，实时监控下载进度，完成后即可获得处理好的文件。</p>
+                    </div>
+                </div>
+                
+                <!-- 视频编辑指南 -->
+                <div class="fade-in">
+                    <h3 class="text-2xl font-bold mb-6 text-accent">视频编辑</h3>
+                    
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4 class="font-semibold mb-3">上传视频文件</h4>
+                        <p class="text-text-secondary mb-4">拖拽或选择要编辑的视频文件，支持多种格式。</p>
+                        <div class="code-block">
+                            <span class="command-line">支持格式:</span> <span class="parameter">MP4, MKV, AVI, MOV, WebM等</span>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4 class="font-semibold mb-3">设置编辑参数</h4>
+                        <p class="text-text-secondary mb-4">配置裁剪时间、分辨率、压缩质量等编辑选项。</p>
+                        <div class="code-block">
+                            <span class="command-line">编辑功能:</span> <span class="parameter">裁剪、合并、压缩、添加水印、调整分辨率</span>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4 class="font-semibold mb-3">预览效果</h4>
+                        <p class="text-text-secondary mb-4">实时预览编辑效果，确保满足需求。</p>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">4</div>
+                        <h4 class="font-semibold mb-3">开始处理</h4>
+                        <p class="text-text-secondary">将任务添加到处理队列，等待处理完成后下载结果。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 性能统计 -->
+    <section class="py-20 bg-primary">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold mb-6">平台性能</h2>
+                <p class="text-xl text-text-secondary max-w-4xl mx-auto">
+                    基于先进技术架构，提供卓越的处理性能
+                </p>
+            </div>
+            
+            <div class="performance-stats fade-in">
+                <div class="stat-card">
+                    <div class="stat-value">1000+</div>
+                    <div class="stat-label">支持网站</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">99.8%</div>
+                    <div class="stat-label">成功率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">10x</div>
+                    <div class="stat-label">处理速度</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">50K+</div>
+                    <div class="stat-label">处理文件</div>
+                </div>
+            </div>
+            
+            <!-- 性能图表 -->
+            <div class="bg-panel rounded-lg p-6 mt-12 fade-in">
+                <h3 class="text-xl font-bold mb-6 text-center">处理性能分析</h3>
+                <div id="performance-chart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FAQ -->
+    <section class="py-20 bg-secondary">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold mb-6">常见问题</h2>
+                <p class="text-xl text-text-secondary">
+                    解答用户在使用过程中遇到的常见问题
+                </p>
+            </div>
+            
+            <div class="fade-in">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">MediaPro支持哪些视频平台？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            MediaPro基于yt-dlp技术，支持超过1000个视频网站，包括YouTube、Bilibili、Vimeo、TikTok、Instagram、Facebook、Twitter等主流平台，以及许多区域性视频网站。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">处理速度如何？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            MediaPro采用多线程处理和优化的算法，处理速度比传统工具快10倍以上。具体速度取决于文件大小、网络状况和服务器负载，一般情况下，1GB视频文件的处理时间在2-5分钟内完成。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">是否支持批量处理？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            是的，MediaPro完全支持批量处理。您可以同时上传多个文件或粘贴多个URL，系统会自动将它们加入处理队列，按照顺序逐一处理。您还可以为批量任务设置统一的处理参数。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">数据安全如何保障？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            MediaPro高度重视用户隐私和数据安全。所有处理都在本地完成，您的文件不会被上传到服务器。处理完成后，临时文件会自动清理，确保您的数据安全。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">支持哪些输出格式？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            视频支持MP4、MKV、WebM、AVI等格式；音频支持MP3、WAV、FLAC、AAC、OGG、M4A等格式。您可以根据需要选择合适的输出格式和质量设置。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <h3 class="font-semibold">如何处理大文件？</h3>
+                        <svg class="w-5 h-5 text-text-secondary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-text-secondary">
+                            MediaPro针对大文件处理进行了优化，支持断点续传和内存管理。对于超过2GB的大文件，建议使用压缩功能减小文件大小，或者分段处理以获得更好的性能。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 联系信息 -->
+    <section class="py-20 bg-primary">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <div class="fade-in">
+                <h2 class="text-4xl font-bold mb-6">联系我们</h2>
+                <p class="text-xl text-text-secondary mb-12">
+                    有任何问题或建议，欢迎与我们联系
+                </p>
+                
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="feature-card">
+                        <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-4">技术支持</h3>
+                        <p class="text-text-secondary">support@mediapro.com</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-4">用户反馈</h3>
+                        <p class="text-text-secondary">feedback@mediapro.com</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="w-16 h-16 bg-accent rounded-lg flex items-center justify-center mb-6 mx-auto">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0H8m8 0v6a2 2 0 01-2 2H10a2 2 0 01-2-2V6m8 0V4a2 2 0 00-2-2H10a2 2 0 00-2 2v2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-4">商务合作</h3>
+                        <p class="text-text-secondary">business@mediapro.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer class="bg-secondary py-12 border-t border-white/10">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <div class="text-2xl font-bold text-accent mb-4">MediaPro</div>
+            <p class="text-text-secondary mb-6">专业媒体处理平台 - 基于yt-dlp和ffmpeg的强大技术栈</p>
+            <div class="text-sm text-text-secondary">
+                © 2025 MediaPro. 专注于提供高质量的媒体处理服务
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAnimations();
+            initializePerformanceChart();
+        });
+        
+        function initializeAnimations() {
+            // 页面加载动画
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [30, 0],
+                delay: anime.stagger(200),
+                duration: 800,
+                easing: 'easeOutQuart'
+            });
+        }
+        
+        function initializePerformanceChart() {
+            const chart = echarts.init(document.getElementById('performance-chart'));
+            
+            const option = {
+                backgroundColor: 'transparent',
+                title: {
+                    text: '月度处理量统计',
+                    textStyle: {
+                        color: '#ffffff',
+                        fontSize: 16
+                    },
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#252a3a',
+                    borderColor: '#4a90e2',
+                    textStyle: {
+                        color: '#ffffff'
+                    }
+                },
+                legend: {
+                    data: ['视频下载', '视频编辑', '音频处理'],
+                    textStyle: {
+                        color: '#b8c5d1'
+                    },
+                    top: 40
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '80px',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                    axisLabel: {
+                        color: '#b8c5d1'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        color: '#b8c5d1'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '视频下载',
+                        type: 'line',
+                        stack: 'Total',
+                        data: [1200, 1350, 1100, 1450, 1800, 2100, 2300, 2200, 1900, 2400, 2600, 2800],
+                        itemStyle: {
+                            color: '#4a90e2'
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(74, 144, 226, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(74, 144, 226, 0.05)'
+                                }]
+                            }
+                        }
+                    },
+                    {
+                        name: '视频编辑',
+                        type: 'line',
+                        stack: 'Total',
+                        data: [800, 900, 750, 1100, 1300, 1500, 1700, 1600, 1400, 1800, 2000, 2100],
+                        itemStyle: {
+                            color: '#27ae60'
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(39, 174, 96, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(39, 174, 96, 0.05)'
+                                }]
+                            }
+                        }
+                    },
+                    {
+                        name: '音频处理',
+                        type: 'line',
+                        stack: 'Total',
+                        data: [600, 700, 550, 800, 950, 1100, 1200, 1150, 1000, 1300, 1400, 1500],
+                        itemStyle: {
+                            color: '#f39c12'
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(243, 156, 18, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(243, 156, 18, 0.05)'
+                                }]
+                            }
+                        }
+                    }
+                ]
+            };
+            
+            chart.setOption(option);
+            
+            // 响应式调整
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+        }
+        
+        function toggleFAQ(element) {
+            const faqItem = element.parentElement;
+            const answer = faqItem.querySelector('.faq-answer');
+            const arrow = element.querySelector('svg');
+            
+            // 关闭其他FAQ
+            document.querySelectorAll('.faq-item').forEach(item => {
+                if (item !== faqItem) {
+                    item.querySelector('.faq-answer').classList.remove('open');
+                    item.querySelector('svg').style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // 切换当前FAQ
+            answer.classList.toggle('open');
+            const isOpen = answer.classList.contains('open');
+            arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+        
+        // 滚动动画
+        window.addEventListener('scroll', () => {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach(element => {
+                const rect = element.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight * 0.8;
+                
+                if (isVisible && !element.classList.contains('visible')) {
+                    element.classList.add('visible');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频处理实验室 - MediaPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --bg-panel: #252a3a;
+            --accent: #4a90e2;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --error: #e74c3c;
+            --text-primary: #ffffff;
+            --text-secondary: #b8c5d1;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+        
+        .bg-panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .text-accent {
+            color: var(--accent);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #357abd 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #357abd 0%, var(--accent) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+        }
+        
+        .waveform-container {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .waveform-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        .waveform-selection {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(74, 144, 226, 0.3);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: move;
+        }
+        
+        .waveform-cursor {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--text-primary);
+            cursor: ew-resize;
+        }
+        
+        .spectrum-container {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            height: 150px;
+            position: relative;
+        }
+        
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            space-x: 4;
+            padding: 16px;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .control-button:hover {
+            background: #357abd;
+            transform: scale(1.1);
+        }
+        
+        .control-button:active {
+            transform: scale(0.95);
+        }
+        
+        .time-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .tool-panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
+        }
+        
+        .tool-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tool-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .input-field {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 1px var(--accent);
+            outline: none;
+        }
+        
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        
+        .format-card {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .format-card:hover {
+            border-color: var(--accent);
+            background: rgba(74, 144, 226, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .format-card.selected {
+            border-color: var(--accent);
+            background: rgba(74, 144, 226, 0.2);
+        }
+        
+        .format-icon {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 8px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .effect-slider {
+            position: relative;
+            height: 6px;
+            background: var(--bg-panel);
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 12px 0;
+        }
+        
+        .effect-slider-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.1s ease;
+        }
+        
+        .effect-slider-thumb {
+            position: absolute;
+            top: -5px;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: grab;
+            transform: translateX(-50%);
+        }
+        
+        .effect-slider-thumb:active {
+            cursor: grabbing;
+        }
+        
+        .processing-queue {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .queue-item {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.6s ease;
+        }
+        
+        .drag-over {
+            border-color: var(--accent) !important;
+            background: rgba(74, 144, 226, 0.1) !important;
+        }
+        
+        .eq-band {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .eq-slider {
+            flex: 1;
+            height: 4px;
+            background: var(--bg-panel);
+            border-radius: 2px;
+            margin: 0 12px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .eq-slider-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.1s ease;
+        }
+        
+        .eq-slider-thumb {
+            position: absolute;
+            top: -6px;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: grab;
+            transform: translateX(-50%);
+        }
+        
+        .eq-value {
+            min-width: 40px;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .batch-upload {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .batch-upload:hover {
+            border-color: var(--accent);
+            background: rgba(74, 144, 226, 0.05);
+        }
+        
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+        
+        .file-item {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .audio-meter {
+            display: flex;
+            align-items: center;
+            space-x: 2;
+            margin: 8px 0;
+        }
+        
+        .meter-bar {
+            width: 4px;
+            background: var(--bg-panel);
+            border-radius: 2px;
+            margin: 0 1px;
+            transition: height 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-panel/90 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-2xl font-bold text-accent">MediaPro</a>
+                    <div class="text-sm text-text-secondary">音频处理实验室</div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-text-secondary hover:text-accent transition-colors">下载中心</a>
+                    <a href="video-editor.html" class="text-text-secondary hover:text-accent transition-colors">视频编辑</a>
+                    <a href="#" class="text-text-primary hover:text-accent transition-colors">音频处理</a>
+                    <a href="about.html" class="text-text-secondary hover:text-accent transition-colors">关于平台</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容区域 -->
+    <main class="pt-20 min-h-screen bg-gradient-primary">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- 左侧控制面板 -->
+                <div class="lg:col-span-1">
+                    <div class="tool-panel fade-in">
+                        <h3 class="text-lg font-bold mb-6 text-accent">音频处理工具</h3>
+                        
+                        <!-- 文件上传 -->
+                        <div class="tool-section">
+                            <h4 class="font-semibold mb-4">导入音频</h4>
+                            <div id="audio-drop-zone" class="border-2 border-dashed border-white/20 rounded-lg p-6 text-center mb-4 cursor-pointer hover:border-accent transition-colors">
+                                <svg class="w-10 h-10 text-text-secondary mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                </svg>
+                                <p class="text-text-secondary mb-2">拖拽或点击上传音频文件</p>
+                                <p class="text-sm text-text-secondary">支持MP3, WAV, FLAC, AAC等格式</p>
+                            </div>
+                            <input type="file" id="audio-file-input" accept="audio/*" class="hidden">
+                        </div>
+                        
+                        <!-- 格式转换 -->
+                        <div class="tool-section">
+                            <h4 class="font-semibold mb-4">格式转换</h4>
+                            <div class="format-grid">
+                                <div class="format-card selected" data-format="mp3">
+                                    <div class="format-icon">MP3</div>
+                                    <div class="font-medium text-sm">MP3</div>
+                                    <div class="text-xs text-text-secondary">通用格式</div>
+                                </div>
+                                <div class="format-card" data-format="wav">
+                                    <div class="format-icon">WAV</div>
+                                    <div class="font-medium text-sm">WAV</div>
+                                    <div class="text-xs text-text-secondary">无损音质</div>
+                                </div>
+                                <div class="format-card" data-format="flac">
+                                    <div class="format-icon">FLAC</div>
+                                    <div class="font-medium text-sm">FLAC</div>
+                                    <div class="text-xs text-text-secondary">压缩无损</div>
+                                </div>
+                                <div class="format-card" data-format="aac">
+                                    <div class="format-icon">AAC</div>
+                                    <div class="font-medium text-sm">AAC</div>
+                                    <div class="text-xs text-text-secondary">高效压缩</div>
+                                </div>
+                                <div class="format-card" data-format="ogg">
+                                    <div class="format-icon">OGG</div>
+                                    <div class="font-medium text-sm">OGG</div>
+                                    <div class="text-xs text-text-secondary">开源格式</div>
+                                </div>
+                                <div class="format-card" data-format="m4a">
+                                    <div class="format-icon">M4A</div>
+                                    <div class="font-medium text-sm">M4A</div>
+                                    <div class="text-xs text-text-secondary">苹果格式</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 音质设置 -->
+                        <div class="tool-section">
+                            <h4 class="font-semibold mb-4">音质设置</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">比特率</label>
+                                    <select id="bitrate" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+                                        <option value="320">320 kbps (最高音质)</option>
+                                        <option value="256">256 kbps (高品质)</option>
+                                        <option value="192" selected>192 kbps (标准品质)</option>
+                                        <option value="128">128 kbps (中等品质)</option>
+                                        <option value="96">96 kbps (低品质)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">采样率</label>
+                                    <select id="sample-rate" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+                                        <option value="48000">48 kHz (专业级)</option>
+                                        <option value="44100" selected>44.1 kHz (CD品质)</option>
+                                        <option value="22050">22.05 kHz (FM广播)</option>
+                                        <option value="11025">11.025 kHz (语音)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">声道</label>
+                                    <select id="channels" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+                                        <option value="2" selected>立体声</option>
+                                        <option value="1">单声道</option>
+                                        <option value="6">5.1环绕声</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 音频效果 -->
+                        <div class="tool-section">
+                            <h4 class="font-semibold mb-4">音频效果</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">音量调整</label>
+                                    <div class="effect-slider">
+                                        <div id="volume-slider-fill" class="effect-slider-fill" style="width: 75%"></div>
+                                        <div id="volume-slider-thumb" class="effect-slider-thumb" style="left: 75%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-text-secondary">
+                                        <span>-12dB</span>
+                                        <span id="volume-value">0dB</span>
+                                        <span>+12dB</span>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">淡入淡出</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-xs text-text-secondary">淡入时长(秒)</label>
+                                            <input type="number" id="fade-in" value="2" min="0" max="10" step="0.5" 
+                                                   class="input-field w-full px-2 py-1 rounded text-sm mt-1">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-text-secondary">淡出时长(秒)</label>
+                                            <input type="number" id="fade-out" value="2" min="0" max="10" step="0.5" 
+                                                   class="input-field w-full px-2 py-1 rounded text-sm mt-1">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">降噪强度</label>
+                                    <div class="effect-slider">
+                                        <div id="noise-reduction-fill" class="effect-slider-fill" style="width: 30%"></div>
+                                        <div id="noise-reduction-thumb" class="effect-slider-thumb" style="left: 30%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-text-secondary">
+                                        <span>无</span>
+                                        <span id="noise-value">30%</span>
+                                        <span>最强</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 均衡器 -->
+                        <div class="tool-section">
+                            <h4 class="font-semibold mb-4">均衡器</h4>
+                            <div class="space-y-2">
+                                <div class="eq-band">
+                                    <span class="text-xs text-text-secondary eq-value">60Hz</span>
+                                    <div class="eq-slider">
+                                        <div class="eq-slider-fill" style="width: 50%"></div>
+                                        <div class="eq-slider-thumb" style="left: 50%"></div>
+                                    </div>
+                                    <span class="eq-value">0dB</span>
+                                </div>
+                                <div class="eq-band">
+                                    <span class="text-xs text-text-secondary eq-value">250Hz</span>
+                                    <div class="eq-slider">
+                                        <div class="eq-slider-fill" style="width: 50%"></div>
+                                        <div class="eq-slider-thumb" style="left: 50%"></div>
+                                    </div>
+                                    <span class="eq-value">0dB</span>
+                                </div>
+                                <div class="eq-band">
+                                    <span class="text-xs text-text-secondary eq-value">1kHz</span>
+                                    <div class="eq-slider">
+                                        <div class="eq-slider-fill" style="width: 50%"></div>
+                                        <div class="eq-slider-thumb" style="left: 50%"></div>
+                                    </div>
+                                    <span class="eq-value">0dB</span>
+                                </div>
+                                <div class="eq-band">
+                                    <span class="text-xs text-text-secondary eq-value">4kHz</span>
+                                    <div class="eq-slider">
+                                        <div class="eq-slider-fill" style="width: 50%"></div>
+                                        <div class="eq-slider-thumb" style="left: 50%"></div>
+                                    </div>
+                                    <span class="eq-value">0dB</span>
+                                </div>
+                                <div class="eq-band">
+                                    <span class="text-xs text-text-secondary eq-value">16kHz</span>
+                                    <div class="eq-slider">
+                                        <div class="eq-slider-fill" style="width: 50%"></div>
+                                        <div class="eq-slider-thumb" style="left: 50%"></div>
+                                    </div>
+                                    <span class="eq-value">0dB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 中间波形显示区域 -->
+                <div class="lg:col-span-1">
+                    <div class="space-y-6">
+                        <!-- 音频信息 -->
+                        <div class="bg-panel rounded-lg p-4 fade-in">
+                            <h3 class="font-semibold mb-4">音频信息</h3>
+                            <div id="audio-info" class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">文件名:</span>
+                                    <span id="file-name">未选择文件</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">格式:</span>
+                                    <span id="file-format">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">时长:</span>
+                                    <span id="file-duration">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">比特率:</span>
+                                    <span id="file-bitrate">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">采样率:</span>
+                                    <span id="file-sample-rate">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">声道:</span>
+                                    <span id="file-channels">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">文件大小:</span>
+                                    <span id="file-size">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 音频控制 -->
+                        <div class="audio-controls fade-in">
+                            <button id="play-btn" class="control-button">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </button>
+                            
+                            <button id="pause-btn" class="control-button ml-3 hidden">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                </svg>
+                            </button>
+                            
+                            <button id="stop-btn" class="control-button ml-3">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 6h12v12H6z"/>
+                                </svg>
+                            </button>
+                            
+                            <div class="flex-1 mx-6">
+                                <div class="time-display">
+                                    <span id="current-position">00:00</span> / <span id="total-length">00:00</span>
+                                </div>
+                            </div>
+                            
+                            <button id="loop-btn" class="control-button">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- 音频电平表 -->
+                        <div class="bg-panel rounded-lg p-4 fade-in">
+                            <h4 class="font-semibold mb-3">音频电平</h4>
+                            <div class="audio-meter">
+                                <div class="meter-bar" style="height: 20px;"></div>
+                                <div class="meter-bar" style="height: 35px;"></div>
+                                <div class="meter-bar" style="height: 50px;"></div>
+                                <div class="meter-bar" style="height: 65px;"></div>
+                                <div class="meter-bar" style="height: 80px;"></div>
+                                <div class="meter-bar" style="height: 70px;"></div>
+                                <div class="meter-bar" style="height: 45px;"></div>
+                                <div class="meter-bar" style="height: 30px;"></div>
+                                <div class="meter-bar" style="height: 25px;"></div>
+                                <div class="meter-bar" style="height: 15px;"></div>
+                                <div class="meter-bar" style="height: 8px;"></div>
+                                <div class="meter-bar" style="height: 4px;"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-text-secondary mt-2">
+                                <span>-∞</span>
+                                <span>-20</span>
+                                <span>-10</span>
+                                <span>-6</span>
+                                <span>-3</span>
+                                <span>0 dB</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 波形显示 -->
+                        <div class="waveform-container fade-in">
+                            <canvas id="waveform-canvas" class="waveform-canvas"></canvas>
+                            <div class="waveform-selection" id="waveform-selection" style="left: 25%; width: 50%"></div>
+                            <div class="waveform-cursor" id="waveform-cursor" style="left: 25%"></div>
+                        </div>
+                        
+                        <!-- 频谱分析 -->
+                        <div class="spectrum-container fade-in">
+                            <div id="spectrum-chart" style="width: 100%; height: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧处理队列 -->
+                <div class="lg:col-span-1">
+                    <div class="tool-panel fade-in">
+                        <h3 class="text-lg font-bold mb-6 text-accent">处理队列</h3>
+                        
+                        <!-- 批量上传 -->
+                        <div class="mb-6">
+                            <div class="batch-upload" id="batch-upload">
+                                <svg class="w-8 h-8 text-text-secondary mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                                </svg>
+                                <p class="text-text-secondary text-sm">批量上传音频文件</p>
+                                <p class="text-xs text-text-secondary mt-1">支持多文件选择和文件夹上传</p>
+                            </div>
+                            <input type="file" id="batch-file-input" accept="audio/*" multiple class="hidden">
+                            
+                            <div class="file-list" id="file-list"></div>
+                        </div>
+                        
+                        <!-- 处理按钮 -->
+                        <div class="mb-6">
+                            <button id="process-audio" class="btn-primary w-full py-3 rounded-lg font-semibold">
+                                开始处理
+                            </button>
+                        </div>
+                        
+                        <!-- 处理队列 -->
+                        <div class="processing-queue" id="processing-queue">
+                            <div class="queue-item">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm">示例音频1.mp3</div>
+                                        <div class="text-xs text-text-secondary">格式转换 • 192kbps</div>
+                                    </div>
+                                </div>
+                                <div class="text-accent text-sm font-mono">67%</div>
+                            </div>
+                            
+                            <div class="queue-item">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div class="w-8 h-8 bg-success rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm">示例音频2.wav</div>
+                                        <div class="text-xs text-text-secondary">降噪处理 • 44.1kHz</div>
+                                    </div>
+                                </div>
+                                <div class="text-success text-sm">已完成</div>
+                            </div>
+                            
+                            <div class="queue-item">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div class="w-8 h-8 bg-text-secondary rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-sm">示例音频3.flac</div>
+                                        <div class="text-xs text-text-secondary">音量调整 • 淡入淡出</div>
+                                    </div>
+                                </div>
+                                <div class="text-text-secondary text-sm">等待中</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 队列控制 -->
+                        <div class="mt-6 space-y-3">
+                            <button id="start-processing" class="w-full py-2 px-4 bg-accent rounded-lg text-sm hover:bg-blue-600 transition-colors">
+                                开始批量处理
+                            </button>
+                            <button id="pause-processing" class="w-full py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
+                                暂停处理
+                            </button>
+                            <button id="clear-audio-queue" class="w-full py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
+                                清空队列
+                            </button>
+                        </div>
+                        
+                        <!-- 处理统计 -->
+                        <div class="mt-6 pt-6 border-t border-white/10">
+                            <h4 class="font-semibold mb-3">处理统计</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">队列中:</span>
+                                    <span id="audio-queue-count">3</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">已完成:</span>
+                                    <span id="audio-completed-count">1</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">总处理时间:</span>
+                                    <span id="audio-total-time">1分23秒</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-secondary">平均压缩率:</span>
+                                    <span id="compression-rate">65%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="bg-secondary py-12 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="text-2xl font-bold text-accent mb-4">MediaPro</div>
+            <p class="text-text-secondary mb-6">专业媒体处理平台 - 基于yt-dlp和ffmpeg的强大技术栈</p>
+            <div class="text-sm text-text-secondary">
+                © 2025 MediaPro. 专注于提供高质量的媒体处理服务
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // 音频处理器主要逻辑
+        class AudioProcessor {
+            constructor() {
+                this.currentAudio = null;
+                this.isPlaying = false;
+                this.currentPosition = 0;
+                this.duration = 0;
+                this.selectedFormat = 'mp3';
+                this.processingQueue = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.initializeAnimations();
+                this.initializeSliders();
+                this.initializeWaveform();
+                this.initializeSpectrum();
+            }
+            
+            setupEventListeners() {
+                // 文件上传
+                const audioDropZone = document.getElementById('audio-drop-zone');
+                const audioFileInput = document.getElementById('audio-file-input');
+                const batchUpload = document.getElementById('batch-upload');
+                const batchFileInput = document.getElementById('batch-file-input');
+                
+                audioDropZone.addEventListener('click', () => audioFileInput.click());
+                audioFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                batchUpload.addEventListener('click', () => batchFileInput.click());
+                batchFileInput.addEventListener('change', (e) => this.handleBatchUpload(e));
+                
+                // 拖拽上传
+                audioDropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    audioDropZone.classList.add('drag-over');
+                });
+                
+                audioDropZone.addEventListener('dragleave', () => {
+                    audioDropZone.classList.remove('drag-over');
+                });
+                
+                audioDropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    audioDropZone.classList.remove('drag-over');
+                    this.handleFileDrop(e);
+                });
+                
+                // 格式选择
+                const formatCards = document.querySelectorAll('.format-card');
+                formatCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        formatCards.forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        this.selectedFormat = card.dataset.format;
+                        this.updateFormatInfo();
+                    });
+                });
+                
+                // 音频控制
+                document.getElementById('play-btn').addEventListener('click', () => this.playAudio());
+                document.getElementById('pause-btn').addEventListener('click', () => this.pauseAudio());
+                document.getElementById('stop-btn').addEventListener('click', () => this.stopAudio());
+                document.getElementById('loop-btn').addEventListener('click', () => this.toggleLoop());
+                
+                // 处理控制
+                document.getElementById('process-audio').addEventListener('click', () => this.processAudio());
+                document.getElementById('start-processing').addEventListener('click', () => this.startBatchProcessing());
+                document.getElementById('pause-processing').addEventListener('click', () => this.pauseProcessing());
+                document.getElementById('clear-audio-queue').addEventListener('click', () => this.clearQueue());
+            }
+            
+            initializeAnimations() {
+                // 页面加载动画
+                anime({
+                    targets: '.fade-in',
+                    opacity: [0, 1],
+                    translateY: [30, 0],
+                    delay: anime.stagger(200),
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                });
+            }
+            
+            initializeSliders() {
+                // 音量滑块
+                this.setupSlider('volume-slider-thumb', 'volume-slider-fill', 'volume-value', -12, 12, 0, 'dB');
+                
+                // 降噪滑块
+                this.setupSlider('noise-reduction-thumb', 'noise-reduction-fill', 'noise-value', 0, 100, 30, '%');
+                
+                // 均衡器滑块
+                const eqSliders = document.querySelectorAll('.eq-slider');
+                eqSliders.forEach(slider => {
+                    this.setupEQSlider(slider);
+                });
+            }
+            
+            setupSlider(thumbId, fillId, valueId, min, max, initial, unit) {
+                const thumb = document.getElementById(thumbId);
+                const fill = document.getElementById(fillId);
+                const valueDisplay = document.getElementById(valueId);
+                
+                let isDragging = false;
+                let currentValue = initial;
+                
+                thumb.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const rect = thumb.parentElement.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    
+                    currentValue = min + (max - min) * (percentage / 100);
+                    thumb.style.left = percentage + '%';
+                    fill.style.width = percentage + '%';
+                    
+                    const displayValue = unit === 'dB' ? 
+                        (currentValue >= 0 ? '+' + currentValue.toFixed(1) : currentValue.toFixed(1)) :
+                        Math.round(currentValue);
+                    
+                    valueDisplay.textContent = displayValue + unit;
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+            
+            setupEQSlider(slider) {
+                const thumb = slider.querySelector('.eq-slider-thumb');
+                const fill = slider.querySelector('.eq-slider-fill');
+                const valueDisplay = slider.parentElement.querySelector('.eq-value:last-child');
+                
+                let isDragging = false;
+                let currentValue = 0;
+                
+                thumb.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const rect = slider.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    
+                    currentValue = -12 + 24 * (percentage / 100);
+                    thumb.style.left = percentage + '%';
+                    fill.style.width = percentage + '%';
+                    
+                    const displayValue = currentValue >= 0 ? '+' + currentValue.toFixed(1) : currentValue.toFixed(1);
+                    valueDisplay.textContent = displayValue + 'dB';
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+            
+            initializeWaveform() {
+                const canvas = document.getElementById('waveform-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 设置画布大小
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                // 绘制示例波形
+                this.drawWaveform(ctx, canvas.width, canvas.height);
+            }
+            
+            initializeSpectrum() {
+                const chart = echarts.init(document.getElementById('spectrum-chart'));
+                
+                // 生成频谱数据
+                const frequencies = [];
+                const amplitudes = [];
+                
+                for (let i = 0; i < 128; i++) {
+                    const freq = 20 + (20000 - 20) * (i / 127);
+                    frequencies.push(freq);
+                    amplitudes.push(Math.random() * 100);
+                }
+                
+                const option = {
+                    backgroundColor: 'transparent',
+                    grid: {
+                        left: 40,
+                        right: 20,
+                        top: 20,
+                        bottom: 40
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: frequencies.map(f => f.toFixed(0)),
+                        axisLabel: {
+                            color: '#b8c5d1',
+                            fontSize: 10,
+                            interval: 15
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#b8c5d1',
+                            fontSize: 10
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        splitLine: {
+                            lineStyle: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }
+                    },
+                    series: [{
+                        data: amplitudes,
+                        type: 'bar',
+                        itemStyle: {
+                            color: '#4a90e2'
+                        },
+                        barWidth: '80%'
+                    }]
+                };
+                
+                chart.setOption(option);
+                
+                // 动画更新频谱
+                setInterval(() => {
+                    const newAmplitudes = amplitudes.map(() => Math.random() * 100);
+                    chart.setOption({
+                        series: [{
+                            data: newAmplitudes
+                        }]
+                    });
+                }, 100);
+                
+                // 响应式调整
+                window.addEventListener('resize', () => {
+                    chart.resize();
+                });
+            }
+            
+            drawWaveform(ctx, width, height) {
+                ctx.clearRect(0, 0, width, height);
+                
+                // 设置样式
+                ctx.strokeStyle = '#4a90e2';
+                ctx.lineWidth = 2;
+                
+                // 绘制波形
+                const centerY = height / 2;
+                const amplitude = height * 0.3;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                
+                for (let x = 0; x < width; x += 2) {
+                    const y = centerY + Math.sin(x * 0.02) * amplitude * Math.random();
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.stroke();
+                
+                // 绘制选择区域背景
+                const selectionStart = width * 0.25;
+                const selectionWidth = width * 0.5;
+                
+                ctx.fillStyle = 'rgba(74, 144, 226, 0.1)';
+                ctx.fillRect(selectionStart, 0, selectionWidth, height);
+            }
+            
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.loadAudio(file);
+                }
+            }
+            
+            handleBatchUpload(event) {
+                const files = Array.from(event.target.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('audio/')) {
+                        this.addFileToList(file);
+                    }
+                });
+            }
+            
+            handleFileDrop(event) {
+                const files = Array.from(event.dataTransfer.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('audio/')) {
+                        this.loadAudio(file);
+                    }
+                });
+            }
+            
+            loadAudio(file) {
+                this.currentAudio = file;
+                
+                // 更新音频信息
+                this.updateAudioInfo(file);
+                
+                // 显示成功通知
+                this.showNotification('音频加载成功', 'success');
+                
+                // 重新绘制波形
+                const canvas = document.getElementById('waveform-canvas');
+                const ctx = canvas.getContext('2d');
+                this.drawWaveform(ctx, canvas.width, canvas.height);
+            }
+            
+            updateAudioInfo(file) {
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('file-format').textContent = file.name.split('.').pop().toUpperCase();
+                document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+                
+                // 模拟其他音频信息
+                document.getElementById('file-duration').textContent = '3:24';
+                document.getElementById('file-bitrate').textContent = '192 kbps';
+                document.getElementById('file-sample-rate').textContent = '44.1 kHz';
+                document.getElementById('file-channels').textContent = '立体声';
+                
+                document.getElementById('total-length').textContent = '3:24';
+            }
+            
+            addFileToList(file) {
+                const fileList = document.getElementById('file-list');
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"></path>
+                        </svg>
+                        <div>
+                            <div class="font-semibold text-sm">${file.name}</div>
+                            <div class="text-xs text-text-secondary">${(file.size / 1024 / 1024).toFixed(1)} MB</div>
+                        </div>
+                    </div>
+                    <button class="text-text-secondary hover:text-error transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            }
+            
+            playAudio() {
+                if (!this.currentAudio) {
+                    this.showNotification('请先上传音频文件', 'error');
+                    return;
+                }
+                
+                this.isPlaying = true;
+                document.getElementById('play-btn').classList.add('hidden');
+                document.getElementById('pause-btn').classList.remove('hidden');
+                
+                // 模拟播放进度
+                this.simulatePlayback();
+                
+                this.showNotification('开始播放', 'info');
+            }
+            
+            pauseAudio() {
+                this.isPlaying = false;
+                document.getElementById('play-btn').classList.remove('hidden');
+                document.getElementById('pause-btn').classList.add('hidden');
+                
+                this.showNotification('暂停播放', 'info');
+            }
+            
+            stopAudio() {
+                this.isPlaying = false;
+                this.currentPosition = 0;
+                document.getElementById('play-btn').classList.remove('hidden');
+                document.getElementById('pause-btn').classList.add('hidden');
+                document.getElementById('current-position').textContent = '00:00';
+                
+                this.showNotification('停止播放', 'info');
+            }
+            
+            toggleLoop() {
+                const loopBtn = document.getElementById('loop-btn');
+                loopBtn.classList.toggle('text-accent');
+                
+                const isLooping = loopBtn.classList.contains('text-accent');
+                this.showNotification(isLooping ? '循环播放已开启' : '循环播放已关闭', 'info');
+            }
+            
+            simulatePlayback() {
+                if (!this.isPlaying) return;
+                
+                const duration = 204; // 3:24 in seconds
+                const increment = 0.1;
+                
+                const playInterval = setInterval(() => {
+                    if (!this.isPlaying) {
+                        clearInterval(playInterval);
+                        return;
+                    }
+                    
+                    this.currentPosition += increment;
+                    
+                    if (this.currentPosition >= duration) {
+                        this.currentPosition = 0;
+                        if (!document.getElementById('loop-btn').classList.contains('text-accent')) {
+                            this.stopAudio();
+                            clearInterval(playInterval);
+                            return;
+                        }
+                    }
+                    
+                    const minutes = Math.floor(this.currentPosition / 60);
+                    const seconds = Math.floor(this.currentPosition % 60);
+                    document.getElementById('current-position').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    // 更新波形光标位置
+                    const percentage = (this.currentPosition / duration) * 100;
+                    document.getElementById('waveform-cursor').style.left = percentage + '%';
+                    
+                }, 100);
+            }
+            
+            processAudio() {
+                if (!this.currentAudio && this.processingQueue.length === 0) {
+                    this.showNotification('请先上传音频文件', 'error');
+                    return;
+                }
+                
+                // 模拟处理过程
+                this.showNotification('开始音频处理', 'info');
+                
+                setTimeout(() => {
+                    this.showNotification('音频处理完成', 'success');
+                    this.addProcessedItem();
+                }, 3000);
+            }
+            
+            addProcessedItem() {
+                const queue = document.getElementById('processing-queue');
+                const queueItem = document.createElement('div');
+                queueItem.className = 'queue-item';
+                
+                const format = this.selectedFormat.toUpperCase();
+                const bitrate = document.getElementById('bitrate').value;
+                
+                queueItem.innerHTML = `
+                    <div class="flex items-center space-x-3 flex-1">
+                        <div class="w-8 h-8 bg-success rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm">处理完成</div>
+                            <div class="text-xs text-text-secondary">${format} • ${bitrate}kbps</div>
+                        </div>
+                    </div>
+                    <div class="text-success text-sm">已完成</div>
+                `;
+                
+                queue.appendChild(queueItem);
+            }
+            
+            startBatchProcessing() {
+                const queueItems = document.querySelectorAll('.queue-item');
+                if (queueItems.length === 0) {
+                    this.showNotification('队列为空', 'warning');
+                    return;
+                }
+                
+                this.showNotification('开始批量处理', 'info');
+                
+                // 模拟批处理过程
+                queueItems.forEach((item, index) => {
+                    setTimeout(() => {
+                        this.processQueueItem(item);
+                    }, index * 2000);
+                });
+            }
+            
+            processQueueItem(item) {
+                const statusElement = item.querySelector('.text-text-secondary, .text-accent, .text-success');
+                if (!statusElement) return;
+                
+                statusElement.textContent = '处理中...';
+                statusElement.className = 'text-accent text-sm font-mono';
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    progress = Math.min(100, progress);
+                    
+                    statusElement.textContent = Math.round(progress) + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        statusElement.textContent = '已完成';
+                        statusElement.className = 'text-success text-sm';
+                        
+                        // 更新图标
+                        const iconContainer = item.querySelector('.w-8');
+                        if (iconContainer) {
+                            iconContainer.className = 'w-8 h-8 bg-success rounded-full flex items-center justify-center';
+                            iconContainer.innerHTML = `
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            `;
+                        }
+                    }
+                }, 100);
+            }
+            
+            pauseProcessing() {
+                this.showNotification('处理已暂停', 'info');
+            }
+            
+            clearQueue() {
+                const queue = document.getElementById('processing-queue');
+                queue.innerHTML = '';
+                this.showNotification('队列已清空', 'info');
+            }
+            
+            updateFormatInfo() {
+                const formatInfo = {
+                    'mp3': { name: 'MP3', desc: '通用格式，兼容性最好' },
+                    'wav': { name: 'WAV', desc: '无损音质，文件较大' },
+                    'flac': { name: 'FLAC', desc: '压缩无损，音质优秀' },
+                    'aac': { name: 'AAC', desc: '高效压缩，适合移动设备' },
+                    'ogg': { name: 'OGG', desc: '开源格式，压缩率高' },
+                    'm4a': { name: 'M4A', desc: '苹果格式，音质优良' }
+                };
+                
+                const info = formatInfo[this.selectedFormat];
+                if (info) {
+                    this.showNotification(`已选择 ${info.name} 格式: ${info.desc}`, 'info');
+                }
+            }
+            
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-20 right-6 z-50 p-4 rounded-lg shadow-lg max-w-sm transform translate-x-full transition-transform duration-300`;
+                
+                const styles = {
+                    success: 'bg-green-600 text-white',
+                    error: 'bg-red-600 text-white',
+                    warning: 'bg-yellow-600 text-white',
+                    info: 'bg-blue-600 text-white'
+                };
+                
+                notification.className += ` ${styles[type] || styles.info}`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+                
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(full)';
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+        }
+        
+        // 初始化音频处理器
+        document.addEventListener('DOMContentLoaded', () => {
+            new AudioProcessor();
+        });
+    </script>
+</body>
+</html>
