@@ -1,6 +1,13 @@
 // MediaPro - 主要JavaScript逻辑
 class MediaPro {
     constructor() {
+        this.api = new MediaProAPI();
+        this.currentQuality = '1080p';
+        this.isProcessing = false;
+        this.downloadQueue = [];
+        this.currentTaskId = null;
+        this.analysisData = null;
+        
         this.init();
         this.setupEventListeners();
         this.initializeAnimations();
@@ -9,26 +16,7 @@ class MediaPro {
     }
     
     init() {
-        // 初始化状态
-        this.currentQuality = '1080p';
-        this.isProcessing = false;
-        this.downloadQueue = [];
-        this.supportedPlatforms = [
-            'youtube.com', 'youtu.be', 'bilibili.com', 'vimeo.com', 
-            'tiktok.com', 'instagram.com', 'facebook.com', 'twitter.com'
-        ];
-        
-        // 模拟数据
-        this.mockVideoInfo = {
-            'youtube.com': {
-                title: '示例视频标题',
-                duration: '12:34',
-                originalQuality: '1080p60',
-                audioQuality: '192kbps',
-                subtitles: '中文, 英文',
-                platform: 'YouTube'
-            }
-        };
+        logger.info("MediaPro 前端初始化完成");
     }
     
     setupEventListeners() {
@@ -215,7 +203,7 @@ class MediaPro {
         carousel.mount();
     }
     
-    analyzeUrl() {
+    async analyzeUrl() {
         const urlInput = document.getElementById('video-url');
         const url = urlInput.value.trim();
         
@@ -224,22 +212,34 @@ class MediaPro {
             return;
         }
         
-        // 检测平台
-        const platform = this.detectPlatform(url);
-        if (!platform) {
-            this.showNotification('暂不支持该平台', 'error');
-            return;
-        }
-        
         // 显示分析状态
         this.showAnalyzingStatus();
         
-        // 模拟分析过程
-        setTimeout(() => {
+        try {
+            const analysis = await this.api.analyzeUrl(url);
+            
+            if (analysis.error) {
+                this.showNotification('分析失败: ' + analysis.error, 'error');
+                return;
+            }
+            
+            // 保存分析数据
+            this.analysisData = analysis;
+            
+            // 更新界面
             this.showQualityOptions();
-            this.updateVideoInfo(platform);
+            this.updateVideoInfo(analysis);
             this.showNotification('视频分析完成', 'success');
-        }, 1500);
+            
+        } catch (error) {
+            logger.error('分析URL失败:', error);
+            this.showNotification('分析失败，请检查URL是否正确', 'error');
+            
+            // 重置分析按钮
+            const analyzeBtn = document.getElementById('analyze-btn');
+            analyzeBtn.innerHTML = '分析';
+            analyzeBtn.disabled = false;
+        }
     }
     
     detectPlatform(url) {
@@ -275,22 +275,66 @@ class MediaPro {
         analyzeBtn.disabled = false;
     }
     
-    updateVideoInfo(platform) {
-        const videoInfo = this.mockVideoInfo['youtube.com'] || {
-            title: '未知视频',
-            duration: '未知',
-            originalQuality: '未知',
-            audioQuality: '未知',
-            subtitles: '无',
-            platform: '未知平台'
-        };
-        
+    updateVideoInfo(analysis) {
         // 更新视频信息面板
-        document.getElementById('platform').textContent = videoInfo.platform;
-        document.getElementById('duration').textContent = videoInfo.duration;
-        document.getElementById('original-quality').textContent = videoInfo.originalQuality;
-        document.getElementById('audio-quality').textContent = videoInfo.audioQuality;
-        document.getElementById('subtitles').textContent = videoInfo.subtitles;
+        document.getElementById('platform').textContent = analysis.platform || 'Unknown';
+        document.getElementById('duration').textContent = analysis.duration_str || 'Unknown';
+        document.getElementById('original-quality').textContent = analysis.original_quality || 'Unknown';
+        document.getElementById('audio-quality').textContent = 'Auto';
+        document.getElementById('subtitles').textContent = analysis.subtitles ? analysis.subtitles.join(', ') : 'None';
+        
+        // 更新质量选项
+        this.updateQualityOptions(analysis.formats);
+    }
+    
+    updateQualityOptions(formats) {
+        const qualityOptions = document.getElementById('quality-options');
+        if (!formats || formats.length === 0) {
+            return;
+        }
+        
+        // 清空现有选项
+        const existingSelectors = qualityOptions.querySelectorAll('.quality-selector');
+        existingSelectors.forEach(selector => selector.remove());
+        
+        // 添加新的质量选项
+        const container = qualityOptions.querySelector('.grid');
+        if (!container) {
+            return;
+        }
+        
+        formats.forEach(format => {
+            const selector = document.createElement('div');
+            selector.className = 'quality-selector';
+            selector.dataset.quality = format.format_id;
+            
+            const qualityText = format.quality || `${format.height}p`;
+            const sizeText = format.filesize_str || 'Unknown size';
+            
+            selector.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold">${qualityText}</div>
+                        <div class="text-sm text-text-secondary">${format.ext || 'mp4'} • ${format.vcodec || 'H.264'}</div>
+                    </div>
+                    <div class="text-accent font-mono">~${sizeText}</div>
+                </div>
+            `;
+            
+            selector.addEventListener('click', () => {
+                container.querySelectorAll('.quality-selector').forEach(s => s.classList.remove('selected'));
+                selector.classList.add('selected');
+                this.currentQuality = format.format_id;
+            });
+            
+            container.appendChild(selector);
+        });
+        
+        // 默认选择第一个
+        if (container.firstChild) {
+            container.firstChild.classList.add('selected');
+            this.currentQuality = formats[0].format_id;
+        }
     }
     
     updateFileSize() {
@@ -311,18 +355,168 @@ class MediaPro {
         }
     }
     
-    startDownload() {
+    async startDownload() {
         if (this.isProcessing) {
             this.showNotification('已有任务在处理中', 'warning');
             return;
         }
         
-        this.isProcessing = true;
+        if (!this.analysisData) {
+            this.showNotification('请先分析视频URL', 'error');
+            return;
+        }
+        
+        const url = document.getElementById('video-url').value;
+        const includeSubtitles = document.getElementById('include-subtitles').checked;
+        
+        try {
+            this.isProcessing = true;
+            const downloadBtn = document.getElementById('download-btn');
+            downloadBtn.textContent = '创建任务中...';
+            downloadBtn.disabled = true;
+            
+            const result = await this.api.downloadVideo(url, this.currentQuality, {
+                includeSubtitles,
+                subtitleLangs: ['zh-CN', 'en']
+            });
+            
+            if (result.error) {
+                this.showNotification('创建下载任务失败: ' + result.error, 'error');
+                return;
+            }
+            
+            this.currentTaskId = result.task_id;
+            this.showNotification('下载任务已创建', 'info');
+            
+            // 开始轮询任务状态
+            this.pollDownloadProgress();
+            
+        } catch (error) {
+            logger.error('创建下载任务错误:', error);
+            this.showNotification('创建下载任务失败', 'error');
+            
+            // 重置按钮
+            const downloadBtn = document.getElementById('download-btn');
+            downloadBtn.textContent = '开始下载';
+            downloadBtn.disabled = false;
+            this.isProcessing = false;
+        }
+    }
+    
+    pollDownloadProgress() {
+        if (!this.currentTaskId) return;
+        
         const downloadProgress = document.getElementById('download-progress');
         downloadProgress.classList.remove('hidden');
         
-        // 模拟下载过程
-        this.simulateDownload();
+        this.api.pollTaskStatus(this.currentTaskId, (status) => {
+            this.updateDownloadProgress(status);
+            
+            if (status.status === 'completed') {
+                this.completeDownload(status);
+            } else if (status.status === 'failed') {
+                this.failDownload(status);
+            }
+        }, 1000);
+    }
+    
+    updateDownloadProgress(status) {
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const speedElement = document.getElementById('speed');
+        const etaElement = document.getElementById('eta');
+        
+        if (status.progress !== undefined) {
+            progressFill.style.width = `${status.progress}%`;
+            progressText.textContent = `${Math.round(status.progress)}%`;
+        }
+        
+        if (status.message) {
+            speedElement.textContent = status.message;
+        }
+        
+        if (status.status === 'downloading') {
+            etaElement.textContent = '正在下载...';
+        } else if (status.status === 'completed') {
+            etaElement.textContent = '下载完成';
+        }
+    }
+    
+    completeDownload(status) {
+        this.isProcessing = false;
+        
+        // 显示完成状态
+        const progressText = document.getElementById('progress-text');
+        const speedElement = document.getElementById('speed');
+        const etaElement = document.getElementById('eta');
+        
+        progressText.textContent = '100%';
+        progressText.classList.add('text-success');
+        speedElement.textContent = '下载完成';
+        etaElement.textContent = '文件已准备好';
+        
+        // 显示下载链接
+        if (status.downloaded_files && status.downloaded_files.length > 0) {
+            this.showDownloadLinks(status.downloaded_files);
+        }
+        
+        this.showNotification('下载完成！', 'success');
+        
+        // 重置按钮
+        const downloadBtn = document.getElementById('download-btn');
+        downloadBtn.textContent = '开始下载';
+        downloadBtn.disabled = false;
+        
+        // 3秒后隐藏进度条
+        setTimeout(() => {
+            document.getElementById('download-progress').classList.add('hidden');
+        }, 3000);
+    }
+    
+    failDownload(status) {
+        this.isProcessing = false;
+        
+        this.showNotification('下载失败: ' + (status.error || '未知错误'), 'error');
+        
+        // 重置按钮
+        const downloadBtn = document.getElementById('download-btn');
+        downloadBtn.textContent = '开始下载';
+        downloadBtn.disabled = false;
+        
+        // 隐藏进度条
+        setTimeout(() => {
+            document.getElementById('download-progress').classList.add('hidden');
+        }, 3000);
+    }
+    
+    showDownloadLinks(files) {
+        // 创建下载链接区域
+        const existingLinks = document.getElementById('download-links');
+        if (existingLinks) {
+            existingLinks.remove();
+        }
+        
+        const linksContainer = document.createElement('div');
+        linksContainer.id = 'download-links';
+        linksContainer.className = 'bg-panel rounded-lg p-4 mt-4';
+        linksContainer.innerHTML = `
+            <h4 class="font-semibold mb-3">下载链接</h4>
+            <div class="space-y-2">
+                ${files.map(file => `
+                    <div class="flex justify-between items-center p-2 bg-secondary rounded">
+                        <span class="text-sm">${file.filename}</span>
+                        <span class="text-xs text-text-secondary">${file.size_str}</span>
+                        <a href="/api/download-file/${this.currentTaskId}/${encodeURIComponent(file.filename)}" 
+                           class="btn-primary px-3 py-1 rounded text-xs">
+                            下载
+                        </a>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        const qualityOptions = document.getElementById('quality-options');
+        qualityOptions.parentNode.insertBefore(linksContainer, qualityOptions.nextSibling);
     }
     
     simulateDownload() {
@@ -536,6 +730,118 @@ class MediaPro {
         }, 3000);
     }
 }
+
+// API调用类
+class MediaProAPI {
+    constructor() {
+        this.baseURL = 'http://localhost:5000/api';
+    }
+    
+    async analyzeUrl(url) {
+        try {
+            logger.info(`分析URL: ${url}`);
+            const response = await fetch(`${this.baseURL}/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            logger.error('分析URL错误:', error);
+            throw error;
+        }
+    }
+    
+    async downloadVideo(url, formatId, options = {}) {
+        try {
+            logger.info(`下载视频: ${url}, 格式: ${formatId}`);
+            const response = await fetch(`${this.baseURL}/download`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url,
+                    format_id: formatId,
+                    include_subtitles: options.includeSubtitles || false,
+                    subtitle_langs: options.subtitleLangs || ['zh-CN', 'en']
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            logger.error('下载视频错误:', error);
+            throw error;
+        }
+    }
+    
+    async getTaskStatus(taskId) {
+        try {
+            const response = await fetch(`${this.baseURL}/tasks/${taskId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            logger.error('获取任务状态错误:', error);
+            throw error;
+        }
+    }
+    
+    async pollTaskStatus(taskId, callback, interval = 1000) {
+        const poll = async () => {
+            try {
+                const status = await this.getTaskStatus(taskId);
+                callback(status);
+                
+                if (status.status === 'pending' || status.status === 'downloading' || status.status === 'processing') {
+                    setTimeout(poll, interval);
+                }
+            } catch (error) {
+                logger.error('轮询任务状态错误:', error);
+                callback({ status: 'error', error: error.message });
+            }
+        };
+        
+        poll();
+    }
+    
+    async getSupportedPlatforms() {
+        try {
+            const response = await fetch(`${this.baseURL}/platforms`);
+            return await response.json();
+        } catch (error) {
+            logger.error('获取支持平台错误:', error);
+            return { platforms: [] };
+        }
+    }
+}
+
+// 日志工具
+const logger = {
+    info: (message, ...args) => {
+        console.log(`[INFO] ${message}`, ...args);
+    },
+    error: (message, ...args) => {
+        console.error(`[ERROR] ${message}`, ...args);
+    },
+    warn: (message, ...args) => {
+        console.warn(`[WARN] ${message}`, ...args);
+    }
+};
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
