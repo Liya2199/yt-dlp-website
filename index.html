@@ -3,62 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Downloader & Processor</title>
+    <title>OK Computer - Video Downloader</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Video Downloader & Processor</h1>
+        <h1>OK Computer</h1>
+        <p>Video Downloader</p>
 
-        <section id="video-info-section">
-            <h2>Get Video Information</h2>
-            <input type="text" id="videoUrl" placeholder="Enter video URL" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-            <button id="getInfoBtn">Get Info</button>
-            <div id="videoInfoResult" class="result-box"></div>
-        </section>
+        <div class="input-group">
+            <input type="text" id="video-url" placeholder="Enter video URL">
+            <button id="get-info-btn">Get Info</button>
+        </div>
 
-        <section id="download-section">
-            <h2>Download Video/Audio</h2>
-            <label for="downloadFormat">Select Format:</label>
-            <select id="downloadFormat"></select>
-            <label for="outputFormat">Output File Type:</label>
-            <select id="outputFormat">
-                <option value="mp4">MP4</option>
-                <option value="webm">WebM</option>
-                <option value="mkv">MKV</option>
-            </select>
-            <label>
-                <input type="checkbox" id="noSubtitles"> Skip Subtitles
-            </label>
-            <button id="downloadBtn">Download</button>
-            <div id="downloadResult" class="result-box"></div>
-        </section>
+        <div id="video-info" class="hidden">
+            <div class="video-details">
+                <img id="thumbnail" src="" alt="Video Thumbnail">
+                <h2 id="video-title"></h2>
+            </div>
 
-        <section id="extract-audio-section">
-            <h2>Extract Audio</h2>
-            <label for="audioFormat">Audio Format:</label>
-            <select id="audioFormat">
-                <option value="mp3">MP3</option>
-                <option value="wav">WAV</option>
-            </select>
-            <button id="extractAudioBtn">Extract Audio</button>
-            <div id="extractAudioResult" class="result-box"></div>
-        </section>
+            <div class="options">
+                <h3>Download Options</h3>
+                <div class="option-group">
+                    <label for="audio-only">Audio Only?</label>
+                    <input type="checkbox" id="audio-only">
+                </div>
 
-        <section id="process-video-section">
-            <h2>Process Video (e.g., Trim)</h2>
-            <label for="trimStartTime">Start Time (HH:MM:SS):</label>
-            <input type="text" id="trimStartTime" value="00:00:10">
-            <label for="trimDuration">Duration (HH:MM:SS):</label>
-            <input type="text" id="trimDuration" value="00:00:05">
-            <label for="processOutputFormat">Output Format:</label>
-            <select id="processOutputFormat">
-                <option value="mp4">MP4</option>
-                <option value="webm">WebM</option>
-            </select>
-            <button id="processVideoBtn">Process Video</button>
-            <div id="processVideoResult" class="result-box"></div>
-        </section>
+                <div id="video-options">
+                    <div class="option-group">
+                        <label for="video-format">Video Quality:</label>
+                        <select id="video-format"></select>
+                    </div>
+                    <div class="option-group">
+                        <label for="subtitle">Subtitles:</label>
+                        <select id="subtitle">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="audio-options" class="hidden">
+                    <div class="option-group">
+                        <label for="audio-format">Audio Format:</label>
+                        <select id="audio-format">
+                            <option value="mp3">MP3</option>
+                            <option value="wav">WAV</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button id="download-btn">Download</button>
+        </div>
+
+        <div id="status" class="hidden">
+            <p id="status-message"></p>
+            <div class="loader"></div>
+        </div>
     </div>
 
     <script src="script.js"></script>

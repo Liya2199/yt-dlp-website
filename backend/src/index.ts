@@ -1,177 +1,164 @@
-import express from 'express';
-import cors from 'cors';
-import { YtDlpWrap } from 'yt-dlp-wrap';
-import ffmpeg from 'fluent-ffmpeg';
-import path from 'path';
-import fs from 'fs';
+import { Request, Response } from 'express';
+import { FfmpegCommand } from 'fluent-ffmpeg';
+import { YtDlp } from 'ytdlp-nodejs';
 
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs').promises;
+const { v4: uuidv4 } = require('uuid');
+const ffmpeg = require('fluent-ffmpeg');
+
+// --- CONFIGURATION ---
 const app = express();
-const port = 3000;
+const port = 3001;
+const downloadsDir = path.join(__dirname, '..', 'downloads');
+const rootDir = path.join(__dirname, '..', '..');
+const ytdlp = new YtDlp(); // Create a single instance
 
-app.use(cors());
+// --- SETUP ---
+fs.mkdir(downloadsDir, { recursive: true });
+
+app.use(cors({
+    exposedHeaders: ['Content-Disposition'],
+}));
 app.use(express.json());
 
-// Ensure yt-dlp is available
-const ytDlpWrap = new YtDlpWrap();
-
-// Ensure ffmpeg is available (you might need to set the path if not in system PATH)
-// ffmpeg.setFfmpegPath('/path/to/ffmpeg');
-// ffmpeg.setFfprobePath('/path/to/ffprobe');
-
-const downloadsDir = path.join(__dirname, '../downloads');
-if (!fs.existsSync(downloadsDir)) {
-  fs.mkdirSync(downloadsDir);
-}
-
-// Endpoint to get video information
-app.post('/info', async (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).send('Video URL is required.');
-  }
-
-  try {
-    const metadata = await ytDlpWrap.getVideoInfo(url);
-    res.json(metadata);
-  } catch (error: any) {
-    console.error('Error fetching video info:', error);
-    res.status(500).send(error.message);
-  }
+// --- SERVE FRONTEND ---
+app.use(express.static(rootDir));
+app.get('/', (req: Request, res: Response) => {
+    res.sendFile(path.join(rootDir, 'index.html'));
 });
 
-// Endpoint to download video/audio
-app.post('/download', async (req, res) => {
-  const { url, format, outputFormat, noSubtitles } = req.body;
-  if (!url || !format) {
-    return res.status(400).send('Video URL and format are required.');
-  }
+// --- HELPERS ---
+const runFfmpeg = (command: FfmpegCommand, outputFilePath: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        command
+            .on('error', (err: Error) => reject(err))
+            .on('end', () => resolve(outputFilePath))
+            .save(outputFilePath);
+    });
+};
 
-  try {
-    const outputFilePath = path.join(downloadsDir, `video-${Date.now()}.${outputFormat || 'mp4'}`);
-    const args = [
-      '-f', format,
-      '-o', outputFilePath,
-      '--merge-output-format', outputFormat || 'mp4',
-    ];
+// --- API ENDPOINTS ---
 
-    if (noSubtitles) {
-      args.push('--skip-download'); // Placeholder, need to adjust based on actual yt-dlp-wrap usage for subtitles
+// 1. Get Video Info
+app.post('/info', async (req: Request, res: Response) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).send({ message: 'Video URL is required.' });
+
+    try {
+        const metadata = await ytdlp.getInfoAsync(url);
+        res.json(metadata);
+    } catch (error) {
+        console.error('Error fetching video info:', error);
+        res.status(500).send({ message: 'Failed to fetch video info.', error });
     }
-
-    ytDlpWrap.exec(args.concat(url))
-      .on('progress', (progress) => console.log(progress))
-      .on('ytDlpEvent', (eventType, eventData) => console.log(eventType, eventData))
-      .on('error', (error) => {
-        console.error('Download error:', error);
-        res.status(500).send(error.message);
-      })
-      .on('close', () => {
-        res.download(outputFilePath, (err) => {
-          if (err) {
-            console.error('Error sending file:', err);
-            res.status(500).send('Error sending file.');
-          }
-          fs.unlinkSync(outputFilePath); // Clean up
-        });
-      });
-  } catch (error: any) {
-    console.error('Error initiating download:', error);
-    res.status(500).send(error.message);
-  }
 });
 
-// Endpoint to extract audio
-app.post('/extract-audio', async (req, res) => {
-  const { url, audioFormat } = req.body; // audioFormat can be 'mp3' or 'wav'
-  if (!url || !audioFormat) {
-    return res.status(400).send('Video URL and audio format are required.');
-  }
+// 3. Download Video
+app.post('/download', async (req: Request, res: Response) => {
+    const { url, format, subLang } = req.body;
+    if (!url || !format) return res.status(400).send({ message: 'URL and format are required.' });
 
-  try {
-    const videoFilePath = path.join(downloadsDir, `temp-video-${Date.now()}.mp4`);
-    const audioOutputFilePath = path.join(downloadsDir, `audio-${Date.now()}.${audioFormat}`);
+    const tempId = uuidv4();
+    const tempOutputDir = path.join(downloadsDir, tempId);
+    let finalFilePath = '';
+    let originalFilename = '';
 
-    // First, download the video
-    await ytDlpWrap.exec([
-      '-f', 'bestvideo+bestaudio',
-      '-o', videoFilePath,
-      '--merge-output-format', 'mp4',
-      url
-    ]);
+    try {
+        await fs.mkdir(tempOutputDir, { recursive: true });
+        const outputTemplate = path.join(tempOutputDir, `%(title)s.%(ext)s`);
 
-    // Then, extract audio using ffmpeg
-    ffmpeg(videoFilePath)
-      .toFormat(audioFormat)
-      .on('error', (err) => {
-        console.error('FFmpeg error:', err);
-        res.status(500).send(err.message);
-        fs.unlinkSync(videoFilePath); // Clean up temp video
-      })
-      .on('end', () => {
-        res.download(audioOutputFilePath, (err) => {
-          if (err) {
-            console.error('Error sending audio file:', err);
-            res.status(500).send('Error sending audio file.');
-          }
-          fs.unlinkSync(videoFilePath); // Clean up temp video
-          fs.unlinkSync(audioOutputFilePath); // Clean up audio
-        });
-      })
-      .save(audioOutputFilePath);
+        const options: any = {
+            format,
+            output: outputTemplate,
+            mergeOutputFormat: 'mp4',
+        };
 
-  } catch (error: any) {
-    console.error('Error extracting audio:', error);
-    res.status(500).send(error.message);
-  }
+        if (subLang) {
+            options.embedSubs = true;
+            options.subLangs = `all,${subLang},-live_chat`;
+        }
+
+        console.log(`Starting download for URL: ${url} with options:`, options);
+        
+        await ytdlp.downloadAsync(url, options);
+
+        const files = await fs.readdir(tempOutputDir);
+        if (files.length === 0) {
+            throw new Error('yt-dlp did not produce a file.');
+        }
+        originalFilename = files[0];
+        finalFilePath = path.join(tempOutputDir, originalFilename);
+
+        console.log(`Download complete. Sending file: ${finalFilePath}`);
+        res.download(finalFilePath, originalFilename);
+
+    } catch (error) {
+        console.error('Download process failed:', error);
+        res.status(500).send({ message: 'Download process failed.', error });
+    } finally {
+        if (finalFilePath) {
+            setTimeout(async () => {
+                try {
+                    await fs.rm(tempOutputDir, { recursive: true, force: true });
+                    console.log(`Cleaned up directory: ${tempOutputDir}`);
+                } catch (cleanupError) {
+                    console.error(`Failed to cleanup directory ${tempOutputDir}:`, cleanupError);
+                }
+            }, 30000);
+        }
+    }
 });
 
-// Basic FFmpeg processing endpoint (e.g., trim)
-app.post('/process-video', async (req, res) => {
-  const { url, startTime, duration, outputFormat } = req.body; // Example: trim video
-  if (!url || !startTime || !duration || !outputFormat) {
-    return res.status(400).send('Video URL, start time, duration, and output format are required.');
-  }
+// 4. Extract Audio
+app.post('/extract-audio', async (req: Request, res: Response) => {
+    const { url, audioFormat } = req.body;
+    if (!url || !audioFormat) return res.status(400).send({ message: 'URL and audio format are required.' });
 
-  try {
-    const inputFilePath = path.join(downloadsDir, `input-video-${Date.now()}.mp4`);
-    const outputFilePath = path.join(downloadsDir, `processed-video-${Date.now()}.${outputFormat}`);
+    const tempId = uuidv4();
+    let finalAudioPath = '';
+    let finalFilename = '';
 
-    // Download the video first
-    await ytDlpWrap.exec([
-      '-f', 'bestvideo+bestaudio',
-      '-o', inputFilePath,
-      '--merge-output-format', 'mp4',
-      url
-    ]);
+    try {
+        console.log(`Starting audio extraction for URL: ${url}`);
+        
+        const info = await ytdlp.getInfoAsync(url);
+        const safeTitle = info.title.replace(/[^a-z0-9_ \-\.]/gi, '_');
+        finalFilename = `${safeTitle}.${audioFormat}`;
+        finalAudioPath = path.join(downloadsDir, `${tempId}.${audioFormat}`);
 
-    ffmpeg(inputFilePath)
-      .setStartTime(startTime) // '00:00:10'
-      .setDuration(duration)   // '00:00:30'
-      .toFormat(outputFormat)
-      .on('error', (err) => {
-        console.error('FFmpeg processing error:', err);
-        res.status(500).send(err.message);
-        fs.unlinkSync(inputFilePath); // Clean up input video
-      })
-      .on('end', () => {
-        res.download(outputFilePath, (err) => {
-          if (err) {
-            console.error('Error sending processed file:', err);
-            res.status(500).send('Error sending processed file.');
-          }
-          fs.unlinkSync(inputFilePath); // Clean up input video
-          fs.unlinkSync(outputFilePath); // Clean up output video
-        });
-      })
-      .save(outputFilePath);
+        const stream = ytdlp.stream(url, { format: 'bestaudio' });
 
-  } catch (error: any) {
-    console.error('Error processing video:', error);
-    res.status(500).send(error.message);
-  }
+        console.log(`Piping audio stream to ffmpeg for conversion to ${audioFormat}...`);
+        const command = ffmpeg(stream)
+            .audioCodec(audioFormat === 'mp3' ? 'libmp3lame' : 'pcm_s16le')
+            .toFormat(audioFormat);
+
+        await runFfmpeg(command, finalAudioPath);
+
+        console.log(`Conversion complete. Sending file: ${finalAudioPath}`);
+        res.download(finalAudioPath, finalFilename);
+
+    } catch (error) {
+        console.error('Audio extraction failed:', error);
+        res.status(500).send({ message: 'Audio extraction failed.', error });
+    } finally {
+        if (finalAudioPath) {
+            setTimeout(async () => {
+                try {
+                    await fs.unlink(finalAudioPath);
+                    console.log(`Cleaned up file: ${finalAudioPath}`);
+                } catch (cleanupError) {
+                    console.error(`Failed to cleanup file ${finalAudioPath}:`, cleanupError);
+                }
+            }, 30000);
+        }
+    }
 });
 
-
+// --- START SERVER ---
 app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
+    console.log(`Backend server listening at http://localhost:${port}`);
 });
