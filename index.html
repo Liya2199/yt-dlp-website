@@ -1,577 +1,66 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediaPro - 专业媒体处理平台</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0a0e1a;
-            --bg-secondary: #1a1f2e;
-            --bg-panel: #252a3a;
-            --accent: #4a90e2;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --error: #e74c3c;
-            --text-primary: #ffffff;
-            --text-secondary: #b8c5d1;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow-x: hidden;
-        }
-        
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-        }
-        
-        .bg-panel {
-            background: var(--bg-panel);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .text-accent {
-            color: var(--accent);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, #357abd 100%);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #357abd 0%, var(--accent) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
-        }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .card-hover:hover {
-            border-color: var(--accent);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .input-field {
-            background: var(--bg-panel);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-        }
-        
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: inset 0 0 0 1px var(--accent);
-            outline: none;
-        }
-        
-        .progress-bar {
-            background: var(--bg-panel);
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            background: linear-gradient(90deg, var(--accent) 0%, var(--success) 100%);
-            transition: width 0.3s ease;
-        }
-        
-        .particle-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-        
-        .fade-in {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-            transition: all 0.6s ease;
-        }
-        
-        .platform-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            background: var(--bg-panel);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .platform-icon:hover {
-            background: var(--accent);
-            transform: scale(1.1);
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, var(--bg-panel) 0%, rgba(74, 144, 226, 0.1) 100%);
-            border: 1px solid rgba(74, 144, 226, 0.2);
-        }
-        
-        .processing-animation {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .drag-over {
-            border-color: var(--accent) !important;
-            background: rgba(74, 144, 226, 0.1) !important;
-        }
-        
-        .quality-selector {
-            background: var(--bg-panel);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 8px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .quality-selector:hover {
-            border-color: var(--accent);
-            background: rgba(74, 144, 226, 0.1);
-        }
-        
-        .quality-selector.selected {
-            border-color: var(--accent);
-            background: rgba(74, 144, 226, 0.2);
-        }
-    </style>
+    <title>Video Downloader & Processor</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 粒子背景 -->
-    <div id="particle-container" class="particle-bg"></div>
-    
-    <!-- 导航栏 -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-panel/90 backdrop-blur-md border-b border-white/10">
-        <div class="max-w-6xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div class="text-2xl font-bold text-accent">MediaPro</div>
-                    <div class="text-sm text-text-secondary">专业媒体处理平台</div>
-                </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#" class="text-text-primary hover:text-accent transition-colors">下载中心</a>
-                    <a href="video-editor.html" class="text-text-secondary hover:text-accent transition-colors">视频编辑</a>
-                    <a href="audio-processor.html" class="text-text-secondary hover:text-accent transition-colors">音频处理</a>
-                    <a href="about.html" class="text-text-secondary hover:text-accent transition-colors">关于平台</a>
-                </div>
-                <button class="md:hidden text-text-primary">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Hero区域 -->
-    <section class="relative pt-24 pb-16 bg-gradient-primary">
-        <div class="max-w-6xl mx-auto px-6">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
-                <div class="fade-in">
-                    <h1 class="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                        <span class="text-accent">专业媒体处理</span><br>
-                        一站式解决方案
-                    </h1>
-                    <p class="text-xl text-text-secondary mb-8 leading-relaxed">
-                        集成yt-dlp和ffmpeg的强大功能，支持1000+网站视频下载、专业视频编辑、音频格式转换等完整媒体处理工作流。
-                    </p>
-                    <div class="text-center">
-                        <p class="text-lg text-text-secondary">
-                            专业媒体处理，一站式解决方案
-                        </p>
-                    </div>
-                </div>
-                <div class="fade-in">
-                    <div class="relative">
-                        <img src="hero-media-workspace.png" alt="专业媒体工作空间" class="rounded-2xl shadow-2xl w-full h-auto">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- 统计面板 -->
-    <section class="py-16 bg-secondary">
-        <div class="max-w-6xl mx-auto px-6">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="stats-card p-6 rounded-xl text-center fade-in">
-                    <div class="text-3xl font-bold text-accent mb-2" id="supported-sites">1000+</div>
-                    <div class="text-text-secondary">支持网站</div>
-                </div>
-                <div class="stats-card p-6 rounded-xl text-center fade-in">
-                    <div class="text-3xl font-bold text-accent mb-2" id="processed-files">50K+</div>
-                    <div class="text-text-secondary">处理文件</div>
-                </div>
-                <div class="stats-card p-6 rounded-xl text-center fade-in">
-                    <div class="text-3xl font-bold text-accent mb-2" id="success-rate">99.8%</div>
-                    <div class="text-text-secondary">成功率</div>
-                </div>
-                <div class="stats-card p-6 rounded-xl text-center fade-in">
-                    <div class="text-3xl font-bold text-accent mb-2" id="processing-speed">10x</div>
-                    <div class="text-text-secondary">处理速度</div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- 主要功能区域 -->
-    <section class="py-20 bg-primary">
-        <div class="max-w-6xl mx-auto px-6">
-            <div class="text-center mb-16 fade-in">
-                <h2 class="text-4xl font-bold mb-6">核心功能</h2>
-                <p class="text-xl text-text-secondary max-w-3xl mx-auto">
-                    基于yt-dlp和ffmpeg的强大技术栈，提供专业级的媒体处理能力
-                </p>
-            </div>
-            
-            <!-- 视频下载模块 -->
-            <div class="bg-panel rounded-2xl p-8 mb-12 fade-in">
-                <div class="flex items-center mb-8">
-                    <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mr-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold">视频下载中心</h3>
-                </div>
-                
-                <div class="grid lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-2">
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium mb-3">视频URL地址</label>
-                            <div class="relative">
-                                <input type="url" id="video-url" placeholder="请输入YouTube、Bilibili、Vimeo等网站的视频链接..." 
-                                       class="input-field w-full px-4 py-3 rounded-lg">
-                                <button id="analyze-btn" class="absolute right-2 top-2 btn-primary px-4 py-2 rounded-md text-sm">
-                                    分析
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="quality-options" class="hidden mb-6">
-                            <label class="block text-sm font-medium mb-3">选择下载质量</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div class="quality-selector" data-quality="720p">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <div class="font-semibold">720p HD</div>
-                                            <div class="text-sm text-text-secondary">高清画质，平衡大小</div>
-                                        </div>
-                                        <div class="text-accent font-mono">~150MB</div>
-                                    </div>
-                                </div>
-                                <div class="quality-selector selected" data-quality="1080p">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <div class="font-semibold">1080p Full HD</div>
-                                            <div class="text-sm text-text-secondary">全高清画质，推荐</div>
-                                        </div>
-                                        <div class="text-accent font-mono">~280MB</div>
-                                    </div>
-                                </div>
-                                <div class="quality-selector" data-quality="4k">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <div class="font-semibold">4K Ultra HD</div>
-                                            <div class="text-sm text-text-secondary">超高清画质</div>
-                                        </div>
-                                        <div class="text-accent font-mono">~800MB</div>
-                                    </div>
-                                </div>
-                                <div class="quality-selector" data-quality="audio">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <div class="font-semibold">仅音频</div>
-                                            <div class="text-sm text-text-secondary">MP3格式，320kbps</div>
-                                        </div>
-                                        <div class="text-accent font-mono">~12MB</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div id="download-options" class="hidden mb-6">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="include-subtitles" class="mr-2 accent-accent">
-                                    <span class="text-sm">包含字幕</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="include-thumbnail" class="mr-2 accent-accent">
-                                    <span class="text-sm">包含封面</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="embed-metadata" class="mr-2 accent-accent" checked>
-                                    <span class="text-sm">嵌入元数据</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="auto-convert" class="mr-2 accent-accent">
-                                    <span class="text-sm">自动转换</span>
-                                </label>
-                            </div>
-                            
-                            <button id="download-btn" class="btn-primary w-full py-4 rounded-lg font-semibold text-lg">
-                                开始下载
-                            </button>
-                        </div>
-                        
-                        <div id="download-progress" class="hidden">
-                            <div class="bg-panel rounded-lg p-4 mb-4">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="font-semibold">正在下载...</span>
-                                    <span id="progress-text" class="text-accent">0%</span>
-                                </div>
-                                <div class="progress-bar h-3 rounded-full">
-                                    <div id="progress-fill" class="progress-fill h-full rounded-full" style="width: 0%"></div>
-                                </div>
-                                <div class="flex justify-between items-center mt-2 text-sm text-text-secondary">
-                                    <span id="speed">速度: 0 MB/s</span>
-                                    <span id="eta">剩余时间: 计算中...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <div class="bg-panel rounded-lg p-6 mb-6">
-                            <h4 class="font-semibold mb-4">视频信息</h4>
-                            <div id="video-info" class="space-y-3 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-text-secondary">平台:</span>
-                                    <span id="platform">-</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-text-secondary">时长:</span>
-                                    <span id="duration">-</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-text-secondary">原始画质:</span>
-                                    <span id="original-quality">-</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-text-secondary">音频质量:</span>
-                                    <span id="audio-quality">-</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-text-secondary">字幕语言:</span>
-                                    <span id="subtitles">-</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-panel rounded-lg p-6">
-                            <h4 class="font-semibold mb-4">快速操作</h4>
-                            <div class="space-y-3">
-                                <button class="w-full py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
-                                    仅提取音频
-                                </button>
-                                <button class="w-full py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
-                                    发送到编辑器
-                                </button>
-                                <button class="w-full py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
-                                    批量下载
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 批量处理模块 -->
-            <div class="bg-panel rounded-2xl p-8 mb-12 fade-in">
-                <div class="flex items-center justify-between mb-8">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mr-4">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-2xl font-bold">批量处理</h3>
-                    </div>
-                    <button class="text-accent hover:text-white transition-colors">查看全部</button>
-                </div>
-                
-                <div class="grid lg:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="font-semibold mb-4">批量下载</h4>
-                        <div class="border-2 border-dashed border-white/20 rounded-lg p-8 text-center mb-4 drag-drop-zone">
-                            <svg class="w-12 h-12 text-text-secondary mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                            </svg>
-                            <p class="text-text-secondary mb-2">拖拽或粘贴多个URL</p>
-                            <p class="text-sm text-text-secondary">支持播放列表和批量链接</p>
-                        </div>
-                        <textarea id="batch-urls" placeholder="每行输入一个URL..." 
-                                  class="input-field w-full h-32 px-4 py-3 rounded-lg resize-none"></textarea>
-                    </div>
-                    
-                    <div>
-                        <h4 class="font-semibold mb-4">处理队列</h4>
-                        <div id="processing-queue" class="space-y-3 max-h-64 overflow-y-auto">
-                            <div class="bg-secondary rounded-lg p-4 flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-white processing-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-sm">示例视频1.mp4</div>
-                                        <div class="text-xs text-text-secondary">1080p • 280MB</div>
-                                    </div>
-                                </div>
-                                <div class="text-accent text-sm font-mono">67%</div>
-                            </div>
-                            
-                            <div class="bg-secondary rounded-lg p-4 flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-success rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-sm">示例视频2.mp4</div>
-                                        <div class="text-xs text-text-secondary">4K • 800MB</div>
-                                    </div>
-                                </div>
-                                <div class="text-success text-sm">已完成</div>
-                            </div>
-                            
-                            <div class="bg-secondary rounded-lg p-4 flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-text-secondary rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-sm">示例视频3.mp4</div>
-                                        <div class="text-xs text-text-secondary">等待处理</div>
-                                    </div>
-                                </div>
-                                <button class="text-text-secondary hover:text-error transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4 flex space-x-3">
-                            <button class="flex-1 py-2 px-4 bg-accent rounded-lg text-sm hover:bg-blue-600 transition-colors">
-                                开始批量处理
-                            </button>
-                            <button class="py-2 px-4 bg-secondary rounded-lg text-sm hover:bg-panel transition-colors">
-                                清空队列
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 支持的平台展示 -->
-            <div class="fade-in">
-                <h3 class="text-2xl font-bold text-center mb-12">支持的平台</h3>
-                <div class="splide" id="platform-carousel">
-                    <div class="splide__track">
-                        <ul class="splide__list">
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">YT</span>
-                                </div>
-                                <div class="text-center text-sm">YouTube</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">B</span>
-                                </div>
-                                <div class="text-center text-sm">Bilibili</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">V</span>
-                                </div>
-                                <div class="text-center text-sm">Vimeo</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">TT</span>
-                                </div>
-                                <div class="text-center text-sm">TikTok</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">IG</span>
-                                </div>
-                                <div class="text-center text-sm">Instagram</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">FB</span>
-                                </div>
-                                <div class="text-center text-sm">Facebook</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">TW</span>
-                                </div>
-                                <div class="text-center text-sm">Twitter</div>
-                            </li>
-                            <li class="splide__slide">
-                                <div class="platform-icon mx-auto mb-4">
-                                    <span class="text-accent font-bold">+</span>
-                                </div>
-                                <div class="text-center text-sm">更多平台</div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- 页脚 -->
-    <footer class="bg-secondary py-12 border-t border-white/10">
-        <div class="max-w-6xl mx-auto px-6 text-center">
-            <div class="text-2xl font-bold text-accent mb-4">MediaPro</div>
-            <p class="text-text-secondary mb-6">专业媒体处理平台 - 基于yt-dlp和ffmpeg的强大技术栈</p>
-            <div class="text-sm text-text-secondary">
-                © 2025 MediaPro. 专注于提供高质量的媒体处理服务
-            </div>
-        </div>
-    </footer>
-    
-    <script src="main.js"></script>
+    <div class="container">
+        <h1>Video Downloader & Processor</h1>
+
+        <section id="video-info-section">
+            <h2>Get Video Information</h2>
+            <input type="text" id="videoUrl" placeholder="Enter video URL" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+            <button id="getInfoBtn">Get Info</button>
+            <div id="videoInfoResult" class="result-box"></div>
+        </section>
+
+        <section id="download-section">
+            <h2>Download Video/Audio</h2>
+            <label for="downloadFormat">Select Format:</label>
+            <select id="downloadFormat"></select>
+            <label for="outputFormat">Output File Type:</label>
+            <select id="outputFormat">
+                <option value="mp4">MP4</option>
+                <option value="webm">WebM</option>
+                <option value="mkv">MKV</option>
+            </select>
+            <label>
+                <input type="checkbox" id="noSubtitles"> Skip Subtitles
+            </label>
+            <button id="downloadBtn">Download</button>
+            <div id="downloadResult" class="result-box"></div>
+        </section>
+
+        <section id="extract-audio-section">
+            <h2>Extract Audio</h2>
+            <label for="audioFormat">Audio Format:</label>
+            <select id="audioFormat">
+                <option value="mp3">MP3</option>
+                <option value="wav">WAV</option>
+            </select>
+            <button id="extractAudioBtn">Extract Audio</button>
+            <div id="extractAudioResult" class="result-box"></div>
+        </section>
+
+        <section id="process-video-section">
+            <h2>Process Video (e.g., Trim)</h2>
+            <label for="trimStartTime">Start Time (HH:MM:SS):</label>
+            <input type="text" id="trimStartTime" value="00:00:10">
+            <label for="trimDuration">Duration (HH:MM:SS):</label>
+            <input type="text" id="trimDuration" value="00:00:05">
+            <label for="processOutputFormat">Output Format:</label>
+            <select id="processOutputFormat">
+                <option value="mp4">MP4</option>
+                <option value="webm">WebM</option>
+            </select>
+            <button id="processVideoBtn">Process Video</button>
+            <div id="processVideoResult" class="result-box"></div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
